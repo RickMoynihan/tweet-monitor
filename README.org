@@ -1,0 +1,19 @@
+* tweetmonitor
+
+A project to index twitter posts, written in [[http://clojure.org/][Clojure]] as part of the
+[[http://clojuredojo.com/%20][Dundee Clojure Dojo]].  The project is entirely experimental and
+currently just a project skeleton; but may one day resemble something
+more useful.
+
+** Usage
+
+Currently just a project skeleton, usable by both lein and Enclojure.
+
+** Installation
+
+Open as a Netbeans project, and fire up an Enclojure Project REPL, or
+connect an Emacs session with lein swank.
+
+** License
+
+TBA
