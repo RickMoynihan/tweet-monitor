@@ -18,9 +18,14 @@
     ( org.apache.http.impl.auth BasicScheme)
     ( org.apache.http.protocol BasicHttpContext)
     ( org.apache.http.protocol ExecutionContext)
-    ( org.apache.http.protocol HttpContext)))
+    ( org.apache.http.protocol HttpContext))
+    (:use (clojure.contrib
+            [duck-streams :only [read-lines]]))
+ )
 
 "http://stream.twitter.com/1/statuses/firehose.json"
 
-(.. (.execute (DefaultHttpClient. ) (HttpGet. "http://www.google.com"))
-    getEntity getContent)
+(defn get-url [url]
+  (let [response (->> (HttpGet. url)
+                      (.execute (DefaultHttpClient.)))]
+  (-> response .getEntity .getContent read-lines)))
