@@ -29,9 +29,26 @@
   ([url] (let [response (->> (HttpGet. url)
                         (.execute (DefaultHttpClient.)))]
     (-> response .getEntity .getContent read-lines)))
-  ([url username password] nil))
+  ([url username password]
+    (let [http-client (DefaultHttpClient.)
+          local-context (BasicHttpContext.)
+          basic-auth (BasicScheme.)
+          target-host (HttpHost. "stream.twitter.com" 80 "http")
+          http-get (HttpGet. "/1/statuses/firehose.json")]
+      (.. http-client getCredentialsProvider (setCredentials (AuthScope. "stream.twitter.com" 80)
+                                                             (UsernamePasswordCredentials. username password )))
+      (. local-context (setAttribute "preemptive-auth" basic-auth))
+      (. http-client (addRequestInterceptor (request-interceptor) 0))
+      (dotimes [_ 3]
+        (let [response (. http-client (execute target-host http-get local-context))
+              entity (.getEntity response)]
+        (prn (.getStatusLine response))
+      (when entity
+          (.consumeContent entity))))
+      (.. http-client getConnectionManager shutdown))))
 
-(defn- request-interceptor [username password]
+
+(defn- request-interceptor []
   (proxy [HttpRequestInterceptor] []
     (process [request context]
       (let [auth-state (. context (getAttribute ClientContext/TARGET_AUTH_STATE))]
@@ -44,6 +61,6 @@
                                                             (.getPort target-host))))]
                 (if-not creds
                   (throw (HttpException. "No credentials for preemptive authentication"))
-                  (-> auth-state
+                  (doto auth-state
                     (.setAuthScheme auth-scheme)
                     (.setCredentials creds)))))))))))
