@@ -25,7 +25,25 @@
 
 "http://stream.twitter.com/1/statuses/firehose.json"
 
-(defn get-url [url]
-  (let [response (->> (HttpGet. url)
-                      (.execute (DefaultHttpClient.)))]
-  (-> response .getEntity .getContent read-lines)))
+(defn get-url
+  ([url] (let [response (->> (HttpGet. url)
+                        (.execute (DefaultHttpClient.)))]
+    (-> response .getEntity .getContent read-lines)))
+  ([url username password] nil))
+
+(defn- request-interceptor [username password]
+  (proxy [HttpRequestInterceptor] []
+    (process [request context]
+      (let [auth-state (. context (getAttribute ClientContext/TARGET_AUTH_STATE))]
+        (when-not (.getAuthScheme auth-state)
+          (let [auth-scheme (. context (getAttribute "preemptive-auth"))
+                creds-provider (. context (getAttribute ClientContext/CREDS_PROVIDER))
+                target-host (. context (getAttribute ExecutionContext/HTTP_TARGET_HOST))]
+            (when auth-scheme
+              (let [creds (. creds-provider (getCredentials (AuthScope. (.getHostName target-host)
+                                                            (.getPort target-host))))]
+                (if-not creds
+                  (throw (HttpException. "No credentials for preemptive authentication"))
+                  (-> auth-state
+                    (.setAuthScheme auth-scheme)
+                    (.setCredentials creds)))))))))))
